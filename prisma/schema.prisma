@@ -1,0 +1,627 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id                    String                  @id @default(cuid())
+  firstName             String
+  middleName            String?
+  lastName              String
+  email                 PatientEmail[]
+  gender                String
+  preferredName         String?
+  pronunciation         String?
+  pronouns              String?
+  race                  String[]
+  primaryContactName    String?
+  primaryContactRelationship String?
+  canShareProgramInfo   Boolean  @default(false)
+  alert                 String?
+  ethnicity             String?
+  languages             Language[]
+  birthDate             String
+  phones                Phone[]
+  patientActivation     PatientActivation[]
+  avatar                String?
+  bookmarked            Boolean?
+  region                Region
+  programs              String[]
+  quickNote             String?
+  diagnoses             String[]
+  socialDeterminants    String[]
+  addresses             Address[]
+  goals                 Goal[]
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt()
+  version               String
+  waymarkers            Waymarker[]
+  tasks                 Task[]
+  patientPreference     PatientPreference[]
+  encounterNotes        EncounterNote[]
+  externalCommunication ExternalCommunication[]
+  status                PatientStatus[]
+  memberId              String                  @unique
+  channel               SMSChannel[]
+}
+
+model PatientEmail {
+  id           String   @id @default(cuid())
+  emailAddress String
+  preferred    Boolean  @default(false)
+  patient      Patient? @relation(fields: [patientId], references: [id])
+  patientId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt()
+  source       String?
+  verified     Boolean  @default(false)
+  note         String?
+  archived     Boolean  @default(false)
+  status       ContactInformationStatus?
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        State
+  postalCode   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  version      String
+  patientId    String?
+  source       String?
+  patient      Patient? @relation(fields: [patientId], references: [id])
+  verified     Boolean  @default(false)
+  preferred    Boolean  @default(false)
+  note         String?
+  archived     Boolean  @default(false)
+  status       ContactInformationStatus?
+  location     String?
+  type         String?
+}
+
+model PatientPreference {
+  id        String   @id @default(cuid())
+  patientId String?
+  updatedAt DateTime @updatedAt
+  patient   Patient? @relation(fields: [patientId], references: [id])
+}
+
+model Language {
+  id          String    @id @default(cuid())
+  languages   Languages
+  proficiency String
+  preferred   Boolean   @default(false)
+  patientId   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  patient     Patient?  @relation(fields: [patientId], references: [id])
+  archived    Boolean   @default(false)
+  verbalProficiency  LanguageProficiencies?
+  readingProficiency LanguageProficiencies?
+}
+
+model Goal {
+  id                   String                 @id @default(cuid())
+  description          String
+  statusNote           String
+  icon                 String
+  status               GoalStatus[]
+  createdAt            DateTime               @default(now())
+  collapsed            Boolean
+  updatedAt            DateTime               @updatedAt
+  version              String
+  patientId            String
+  createdByWaymarkerId String
+  category             Category
+  patient              Patient                @relation(fields: [patientId], references: [id])
+  updatedBy            GoalUpdateWaymarkers[]
+  createdBy            Waymarker              @relation(fields: [createdByWaymarkerId], references: [id])
+  deleted              Boolean                @default(false)
+}
+
+model TaskComment {
+  id           String    @id @default(cuid())
+  taskId       String
+  createdById  String
+  commentText  String
+  commentMedia String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  version      String
+  createdBy    Waymarker @relation(fields: [createdById], references: [id])
+  task         Task      @relation(fields: [taskId], references: [id])
+}
+
+model Waymarker {
+  id                    String                         @id @default(cuid())
+  firstName             String
+  lastName              String
+  email                 String                         @unique
+  avatar                String?
+  createdAt             DateTime                       @default(now())
+  updatedAt             DateTime                       @updatedAt
+  version               String
+  title                 WaymarkerTitle?
+  taskComments          TaskComment[]
+  createdEncounterNotes EncounterNote[]                @relation("encounterNoteCreatedBy")
+  encounterNotesUpdated EncounterNoteUpdateWaymarker[]
+  externelCommunication ExternalCommunication[]
+  goalsCreated          Goal[]
+  goalsUpdated          GoalUpdateWaymarkers[]
+  phones                Phone[]
+  assignedToTasks       Task[]                         @relation("taskAssignedTo")
+  taskCreatorTasks      Task[]                         @relation("taskCreator")
+  tasksUpdated          TaskUpdateWaymarker[]
+  tasksCollaboratedOn   TaskCollaborators[]
+  assignedPatients      Patient[]
+  waymarkerTeams        WaymarkerTeam[]
+  createdGoalStatuses   GoalStatus[]
+  twilioNumber          TwilioNumber[]
+}
+
+model EncounterNote {
+  id                   String                         @id @default(cuid())
+  contactType          ContactType?
+  dateOfEncounter      DateTime?
+  startTime            DateTime?
+  endTime              DateTime?
+  encounterType        EncounterType?
+  published            Boolean                        @default(false)
+  encounterOccurred    EncounterOccurred?
+  location             String?
+  metWith              String?
+  goals                String[]
+  createdAt            DateTime                       @default(now())
+  publishedAt          DateTime?
+  updatedAt            DateTime                       @updatedAt
+  providerCbo          String?
+  note                 String
+  patient              Patient                        @relation(fields: [patientId], references: [id])
+  patientId            String
+  createdBy            Waymarker                      @relation("encounterNoteCreatedBy", fields: [createdByWaymarkerId], references: [id])
+  createdByWaymarkerId String
+  updatedBy            EncounterNoteUpdateWaymarker[]
+  deleted              Boolean                        @default(false)
+}
+
+model WaymarkerTeam {
+  id         String      @id @default(cuid())
+  teamName   String
+  region     String
+  teamLead   String
+  waymarkers Waymarker[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  version    String
+}
+
+model Task {
+  id                     String                @id @default(cuid())
+  taskTitle              String
+  taskTag                String[]
+  dueDate                DateTime
+  completed              Boolean               @default(false)
+  flagged                Boolean               @default(false)
+  description            String
+  version                String
+  assignedToWaymarkerId  String
+  taskCreatorWaymarkerId String
+  patientId              String
+  goals                  String[]
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  collaborators          TaskCollaborators[]
+  assignedTo             Waymarker             @relation("taskAssignedTo", fields: [assignedToWaymarkerId], references: [id])
+  patient                Patient               @relation(fields: [patientId], references: [id])
+  taskCreator            Waymarker             @relation("taskCreator", fields: [taskCreatorWaymarkerId], references: [id])
+  comments               TaskComment[]
+  updatedBy              TaskUpdateWaymarker[]
+  deleted                Boolean               @default(false)
+}
+
+model ExternalCommunication {
+  id             String      @id @default(cuid())
+  messageContent String
+  messageMedia   String
+  patient        Patient     @relation(fields: [patientId], references: [id])
+  patientId      String
+  waymarker      Waymarker   @relation(fields: [waymarkerId], references: [id])
+  waymarkerId    String
+  messageCreator String // (Either waymarker or member)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt()
+  version        String
+  SMSChannel     SMSChannel? @relation(fields: [SMSChannelId], references: [id])
+  SMSChannelId   String?
+}
+
+model SMSChannel {
+  id                    String                  @id @default(cuid())
+  patient               Patient                 @relation(fields: [patientId], references: [id])
+  patientId             String
+  externalCommunication ExternalCommunication[]
+  twilioChannelId       String                  @unique
+  twilioChannelName     String
+  twilioNumber          TwilioNumber            @relation(fields: [twilioNumberId], references: [id])
+  twilioNumberId        String
+}
+
+model TwilioNumber {
+  id          String       @id @default(cuid())
+  smsChannel  SMSChannel[]
+  number      String
+  Waymarker   Waymarker?   @relation(fields: [waymarkerId], references: [id])
+  waymarkerId String?
+}
+
+model Phone {
+  id          String     @id @default(cuid())
+  number      String
+  type        String // Home phone, Mobile phone, Twilio,
+  preferred   Boolean    @default(true)
+  patient     Patient?   @relation(fields: [patientId], references: [id])
+  patientId   String?
+  Waymarker   Waymarker? @relation(fields: [waymarkerId], references: [id])
+  waymarkerId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt()
+  source      String?
+  verified    Boolean    @default(false)
+  note        String?
+  archived    Boolean    @default(false)
+  status      ContactInformationStatus?
+}
+
+model PatientStatus {
+  id                String             @id @default(cuid())
+  patient           Patient            @relation(fields: [patientId], references: [id])
+  patientId         String
+  patientStatusType PatientStatusTypes
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt()
+  isCurrent         Boolean            @default(true)
+}
+
+model PatientActivation {
+  id              String   @id @default(cuid())
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  patientId       String
+  activationLevel String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt()
+  isCurrent       Boolean  @default(true)
+}
+
+model GoalStatus {
+  id             String          @id @default(cuid())
+  goal           Goal            @relation(fields: [goalId], references: [id])
+  goalId         String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt()
+  goalStatusType GoalStatusTypes
+  waymarkerId    String
+  createdBy      Waymarker       @relation(fields: [waymarkerId], references: [id])
+  isCurrent      Boolean         @default(true)
+}
+
+model EncounterNoteUpdateWaymarker {
+  encounterNote        EncounterNote @relation(fields: [encounterNoteId], references: [id])
+  encounterNoteId      String
+  waymarker            Waymarker     @relation(fields: [updatedByWaymarkerId], references: [id])
+  updatedByWaymarkerId String
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt()
+
+  @@id([encounterNoteId, updatedByWaymarkerId]) //optional
+}
+
+model GoalUpdateWaymarkers {
+  goal                 Goal      @relation(fields: [goalId], references: [id])
+  goalId               String
+  waymarker            Waymarker @relation(fields: [updatedByWaymarkerId], references: [id])
+  updatedByWaymarkerId String
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt()
+
+  @@id([goalId, updatedByWaymarkerId]) //optional
+}
+
+model TaskCollaborators {
+  task                    Task      @relation(fields: [taskId], references: [id])
+  taskId                  String
+  waymarker               Waymarker @relation(fields: [collaboratorWaymarkerId], references: [id])
+  collaboratorWaymarkerId String
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt()
+
+  @@id([taskId, collaboratorWaymarkerId]) //optional
+}
+
+model TaskUpdateWaymarker {
+  task                 Task      @relation(fields: [taskId], references: [id])
+  taskId               String
+  waymarker            Waymarker @relation(fields: [updatedByWaymarkerId], references: [id])
+  updatedByWaymarkerId String
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt()
+
+  @@id([taskId, updatedByWaymarkerId]) //optional
+}
+
+enum EncounterType {
+  SCHEDULED_CHECKIN //@map("Scheduled Check-in")
+  UNSCHEDULED_CHECKIN //@map("Unscheduled Check-in")
+  INBOUND_REQUEST //@map("Inbound Request")
+  ACCOMPANIMENT //@map("Accompaniment")
+  WEEKEND_TUCKIN //@map("Weekend Tuck-in")
+  HOSPITAL_VISIT //@map("Hospital Visit")
+  GOAL_SETTING //@map("Goal Setting")
+  MEET_THE_PATIENT //@map("Meet the Patient")
+  PATIENT_OUTREACH //@map("Patient Outreach")
+  PHARMACIST_CONSULTATION //@map("Pharmacist Consultation")
+  THERAPY_COUNSELING //@map("Therapy/Counseling")
+  REFERRAL //@map("Referral")
+  PROVIDER_COORDINATION //@map("Provider Coordination")
+  CBO_COORDINATION //@map("CBO Coordination")
+  FAMILY_FRIEND_COORDINATION //@map("Family/Friend Coordination")
+}
+
+enum SocialDeterminants {
+  HOUSING_INSECURITY
+  FOOD_INSECURITY
+  INTER_PERSONAL_VIOLENCE
+  HISTORY_OF_SUBSTANCE_ABUSE
+}
+
+enum Programs {
+  RISING_RISK
+  BEHAVIORAL_HEALTH
+  MATERNITY
+}
+
+enum Region {
+  NORTH_WEST
+  NORTH_EAST
+  SOUTH_WEST
+  SOUTH_EAST
+}
+
+enum Languages {
+  AFRIKAANS
+  ALBANIAN
+  ARABIC
+  ARMENIAN
+  BASQUE
+  BENGALI
+  BULGARIAN
+  CATALAN
+  CAMBODIAN
+  CHINESE_MANDARIN
+  CROATIAN
+  CZECH
+  DANISH
+  DUTCH
+  ENGLISH
+  ESTONIAN
+  FIJI
+  FINNISH
+  FRENCH
+  GEORGIAN
+  GERMAN
+  GREEK
+  GUJARATI
+  HEBREW
+  HINDI
+  HUNGARIAN
+  ICELANDIC
+  INDONESIAN
+  IRISH
+  ITALIAN
+  JAPANESE
+  JAVANESE
+  KOREAN
+  LATIN
+  LATVIAN
+  LITHUANIAN
+  MACEDONIAN
+  MALAY
+  MALAYALAM
+  MALTESE
+  MAORI
+  MARATHI
+  MONGOLIAN
+  NEPALI
+  NORWEGIAN
+  PERSIAN
+  POLISH
+  PORTUGUESE
+  PUNJABI
+  QUECHUA
+  ROMANIAN
+  RUSSIAN
+  SAMOAN
+  SERBIAN
+  SLOVAK
+  SLOVENIAN
+  SPANISH
+  SWAHILI
+  SWEDISH
+  TAMIL
+  TATAR
+  TELUGU
+  THAI
+  TIBETAN
+  TONGA
+  TURKISH
+  UKRAINIAN
+  URDU
+  UZBEK
+  VIETNAMESE
+  WELSH
+  XHOSA
+}
+
+enum State {
+  ALABAMA
+  ALASKA
+  ARIZONA
+  ARKANSAS
+  CALIFORNIA
+  COLORADO
+  CONNECTICUT
+  DELAWARE
+  FLORIDA
+  GEORGIA
+  HAWAII
+  IDAHO
+  ILLINOIS
+  INDIANA
+  IOWA
+  KANSAS
+  KENTUCKY
+  LOUISIANA
+  MAINE
+  MARYLAND
+  MASSACHUSETTS
+  MICHIGAN
+  MINNESOTA
+  MISSISSIPPI
+  MISSOURI
+  MONTANA
+  NEBRASKA
+  NEVADA
+  NEW_HAMPSHIRE
+  NEW_JERSEY
+  NEW_MEXICO
+  NEW_YORK
+  NORTH_CAROLINA
+  NORTH_DAKOTA
+  OHIO
+  OKLAHOMA
+  OREGON
+  PENNSYLVANIA
+  RHODE_ISLAND
+  SOUTH_CAROLINA
+  SOUTH_DAKOTA
+  TENNESSEE
+  TEXAS
+  UTAH
+  VERMONT
+  VIRGINIA
+  WASHINGTON
+  WEST_VIRGINIA
+  WISCONSIN
+  WYOMING
+  DISTRICT_OF_COLUMBIA
+  AMERICAN_SAMOA
+  GUAM
+  NORTHERN_MARIANA_ISLANDS
+  PUERTO_RICO
+  US_VIRGIN_ISLANDS
+}
+
+enum ContactType {
+  HOME_VISIT //@map("Home Visit")
+  IN_COMMUNITY //@map("In-Community")
+  PROVIDER_OFFICE //@map("Provider Office")
+  HOSPITAL //@map("Hospital")
+  CBO
+  OTHER_INPERSON //@map("Other In-Person")
+  PHONE_CALL //@map("Phone Call")
+  VIDEO_VISIT //@map("Video Visit")
+  EMAIL //@map("Email")
+  SMS_TEXT //@map("SMS/Text")
+}
+
+enum GoalIcon {
+  HOUSING
+  FOOD
+  MEDICATION
+  CHILDCARE
+  EMPLOYMENT
+  TRANSPORTATION
+  VIOLENCE
+  ACTIVITY
+  SOCIAL_CONNECTION
+  CARE
+  SUBSTANCE_ABUSE
+  SMOKING_CESSATION
+  MENTAL_HEALTH
+  MATERNITY
+}
+
+enum Category {
+  HOUSING_INSECURITY
+  FOOD_INSECURITY
+  MEDICATION_ADHERENCE
+  CHILDCARE
+  EMPLOYMENT
+  TRANSPORTATION
+  VIOLENCE
+  ACTIVITY
+  SOCIAL_CONNECTION
+  CARE
+  SUBSTANCE_ABUSE
+  SMOKING_CESSATION
+  MENTAL_HEALTH
+  MATERNITY
+}
+
+enum EncounterOccurred {
+  YES
+  NO
+  CANCELED
+  RESCHEDULED
+}
+
+enum PatientStatusTypes {
+  ASSIGNED
+  TARGETED
+  OUTREACH
+  IN_CONTACT
+  ENROLLED
+  MAXIMUM
+  HIGH
+  MODERATE
+  MAINTENANCE
+  PREGRADUATION
+  GRADUATED
+  CLOSED
+}
+
+enum GoalStatusTypes {
+  ACTIVE
+  INCOMPLETE
+  NOT_STARTED
+  COMPLETED
+}
+
+enum WaymarkerTitle {
+  CLINIC_COORDINATOR
+  CHW
+  CHW_LEAD
+  THERAPIST
+  CARE_COORDINATOR
+  PHARMACIST
+  PHARMACIST_CONSULTATION
+}
+
+enum LanguageProficiencies {
+  LOW
+  MODERATE
+  HIGH
+}
+
+enum ContactInformationStatus {
+  VERIFIED
+  NEW
+  DO_NOT_USE
+  ARCHIVED
+}
